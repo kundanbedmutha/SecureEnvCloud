@@ -1,138 +1,150 @@
 """
 fuzzy_engine.py
 ---------------
-Implements the Mamdani Fuzzy Inference System (FIS).
+Mamdani Fuzzy Inference System implemented in pure NumPy.
+No scikit-fuzzy dependency — fully compatible with Python 3.12.
 
-This is the core academic contribution of the project.
+Inputs  : temperature (°C, 0–50), humidity (%, 0–100), aqi (0–300)
+Output  : risk_score (0–100), risk_label (Safe/Advisory/Warning/Emergency)
 
-Inputs  : temperature (°C), humidity (%), aqi (0–300)
-Output  : risk_score  (0–100)  →  risk_label (Safe / Advisory / Warning / Emergency)
-
-How Mamdani FIS works:
-  Step 1 - Fuzzification   : convert crisp sensor values to membership degrees
-  Step 2 - Rule Evaluation : fire IF-THEN rules, compute weighted outputs
-  Step 3 - Defuzzification : centroid method → single crisp risk score
+Steps:
+  1. Fuzzification   — trimf / trapmf membership functions
+  2. Rule Evaluation — Mamdani min-inference on 15 IF-THEN rules
+  3. Aggregation     — max aggregation of rule outputs
+  4. Defuzzification — centroid method
 """
 
 import numpy as np
-import skfuzzy as fuzz
-from skfuzzy import control as ctrl
 
 
-def build_fuzzy_system():
-    """
-    Build and return the Mamdani fuzzy control system.
-    Called once at startup — reused for every sensor reading.
-    """
-
-    # ── Universe of discourse (input ranges) ──────────────────
-    temperature_range = np.arange(0,   51,  1)   # 0°C to 50°C
-    humidity_range    = np.arange(0,  101,  1)   # 0% to 100%
-    aqi_range         = np.arange(0,  301,  1)   # AQI 0 to 300
-    risk_range        = np.arange(0,  101,  1)   # Risk Score 0 to 100
-
-    # ── Fuzzy variables ────────────────────────────────────────
-    temperature = ctrl.Antecedent(temperature_range, 'temperature')
-    humidity    = ctrl.Antecedent(humidity_range,    'humidity')
-    aqi         = ctrl.Antecedent(aqi_range,         'aqi')
-    risk        = ctrl.Consequent(risk_range,        'risk')
-
-    # ── Membership functions: Temperature ─────────────────────
-    # Low: 0–20°C  Moderate: 15–30°C  High: 25–40°C  Hazardous: 35–50°C
-    temperature['low']      = fuzz.trimf(temperature_range, [0,   0,  20])
-    temperature['moderate'] = fuzz.trimf(temperature_range, [15, 22,  30])
-    temperature['high']     = fuzz.trimf(temperature_range, [25, 32,  40])
-    temperature['hazardous']= fuzz.trimf(temperature_range, [35, 43,  50])
-
-    # ── Membership functions: Humidity ─────────────────────────
-    # Low: 0–40%  Moderate: 30–70%  High: 60–100%
-    humidity['low']      = fuzz.trimf(humidity_range, [0,   0,  40])
-    humidity['moderate'] = fuzz.trimf(humidity_range, [30, 50,  70])
-    humidity['high']     = fuzz.trimf(humidity_range, [60, 80, 100])
-
-    # ── Membership functions: AQI ──────────────────────────────
-    # Good:0–50  Moderate:40–100  Unhealthy:90–200  Hazardous:175–300
-    aqi['good']      = fuzz.trimf(aqi_range, [0,    0,   50])
-    aqi['moderate']  = fuzz.trimf(aqi_range, [40,  70,  100])
-    aqi['unhealthy'] = fuzz.trimf(aqi_range, [90, 145,  200])
-    aqi['hazardous'] = fuzz.trimf(aqi_range, [175, 237, 300])
-
-    # ── Membership functions: Risk Score (output) ──────────────
-    risk['safe']      = fuzz.trimf(risk_range, [0,   0,  30])
-    risk['advisory']  = fuzz.trimf(risk_range, [20, 40,  60])
-    risk['warning']   = fuzz.trimf(risk_range, [50, 65,  80])
-    risk['emergency'] = fuzz.trimf(risk_range, [70, 85, 100])
-
-    # ── Fuzzy Rule Base (IF-THEN rules) ───────────────────────
-    # These are the linguistic rules that define system behavior
-    rules = [
-        # Safe conditions
-        ctrl.Rule(aqi['good']      & temperature['low']       & humidity['moderate'], risk['safe']),
-        ctrl.Rule(aqi['good']      & temperature['moderate']  & humidity['low'],      risk['safe']),
-        ctrl.Rule(aqi['good']      & temperature['low']       & humidity['low'],      risk['safe']),
-
-        # Advisory conditions
-        ctrl.Rule(aqi['moderate']  & temperature['moderate']  & humidity['moderate'], risk['advisory']),
-        ctrl.Rule(aqi['good']      & temperature['high']      & humidity['high'],     risk['advisory']),
-        ctrl.Rule(aqi['moderate']  & temperature['low']       & humidity['high'],     risk['advisory']),
-        ctrl.Rule(aqi['moderate']  & temperature['high']      & humidity['low'],      risk['advisory']),
-
-        # Warning conditions
-        ctrl.Rule(aqi['unhealthy'] & temperature['moderate']  & humidity['moderate'], risk['warning']),
-        ctrl.Rule(aqi['unhealthy'] & temperature['high']      & humidity['moderate'], risk['warning']),
-        ctrl.Rule(aqi['moderate']  & temperature['hazardous'] & humidity['high'],     risk['warning']),
-        ctrl.Rule(aqi['unhealthy'] & temperature['low']       & humidity['high'],     risk['warning']),
-
-        # Emergency conditions
-        ctrl.Rule(aqi['hazardous'] & temperature['hazardous'] & humidity['high'],     risk['emergency']),
-        ctrl.Rule(aqi['hazardous'] & temperature['high']      & humidity['high'],     risk['emergency']),
-        ctrl.Rule(aqi['hazardous'] & temperature['moderate']  & humidity['moderate'], risk['emergency']),
-        ctrl.Rule(aqi['hazardous'] & temperature['low']       & humidity['low'],      risk['warning']),
-        ctrl.Rule(aqi['unhealthy'] & temperature['hazardous'] & humidity['high'],     risk['emergency']),
-    ]
-
-    # ── Build and return the control system ───────────────────
-    risk_ctrl   = ctrl.ControlSystem(rules)
-    risk_sim    = ctrl.ControlSystemSimulation(risk_ctrl)
-
-    return risk_sim
+# ── Universe of discourse ─────────────────────────────────────────
+_T   = np.arange(0,   51, 0.5)   # temperature 0–50 °C
+_H   = np.arange(0,  101, 0.5)   # humidity    0–100 %
+_A   = np.arange(0,  301, 1.0)   # AQI         0–300
+_R   = np.arange(0,  101, 0.5)   # risk score  0–100
 
 
-# Build the system once at import time
-_fuzzy_sim = build_fuzzy_system()
+# ── Membership function helpers ──────────────────────────────────
+def _trimf(x, a, b, c):
+    """Triangular membership function."""
+    return np.maximum(0, np.minimum((x - a) / (b - a + 1e-10),
+                                    (c - x) / (c - b + 1e-10)))
 
 
+def _degree(universe, mf, value):
+    """Return membership degree of a crisp value in a MF array."""
+    idx = int(round((value - universe[0]) /
+                    (universe[1] - universe[0])))
+    idx = np.clip(idx, 0, len(mf) - 1)
+    return float(mf[idx])
+
+
+# ── Pre-compute membership function arrays ─────────────────────
+# Temperature
+_t_low       = _trimf(_T,  0,   0,  20)
+_t_moderate  = _trimf(_T, 15,  22,  30)
+_t_high      = _trimf(_T, 25,  32,  40)
+_t_hazardous = _trimf(_T, 35,  43,  50)
+
+# Humidity
+_h_low       = _trimf(_H,  0,   0,  40)
+_h_moderate  = _trimf(_H, 30,  50,  70)
+_h_high      = _trimf(_H, 60,  80, 100)
+
+# AQI
+_a_good      = _trimf(_A,   0,   0,  50)
+_a_moderate  = _trimf(_A,  40,  70, 100)
+_a_unhealthy = _trimf(_A,  90, 145, 200)
+_a_hazardous = _trimf(_A, 175, 237, 300)
+
+# Risk (output)
+_r_safe      = _trimf(_R,  0,   0,  30)
+_r_advisory  = _trimf(_R, 20,  40,  60)
+_r_warning   = _trimf(_R, 50,  65,  80)
+_r_emergency = _trimf(_R, 70,  85, 100)
+
+
+def _fuzzify_temperature(v):
+    v = np.clip(v, 0, 50)
+    return {
+        "low":       _degree(_T, _t_low,       v),
+        "moderate":  _degree(_T, _t_moderate,  v),
+        "high":      _degree(_T, _t_high,      v),
+        "hazardous": _degree(_T, _t_hazardous, v),
+    }
+
+
+def _fuzzify_humidity(v):
+    v = np.clip(v, 0, 100)
+    return {
+        "low":      _degree(_H, _h_low,      v),
+        "moderate": _degree(_H, _h_moderate, v),
+        "high":     _degree(_H, _h_high,     v),
+    }
+
+
+def _fuzzify_aqi(v):
+    v = np.clip(v, 0, 300)
+    return {
+        "good":      _degree(_A, _a_good,      v),
+        "moderate":  _degree(_A, _a_moderate,  v),
+        "unhealthy": _degree(_A, _a_unhealthy, v),
+        "hazardous": _degree(_A, _a_hazardous, v),
+    }
+
+
+# ── Mamdani Inference ────────────────────────────────────────────
 def compute_risk(temperature: float, humidity: float, aqi: float):
     """
     Run the Mamdani fuzzy inference for one sensor reading.
 
-    Parameters
-    ----------
-    temperature : float  (°C,  0–50)
-    humidity    : float  (%,   0–100)
-    aqi         : float  (AQI, 0–300)
-
     Returns
     -------
-    risk_score  : float  (0–100, continuous)
-    risk_label  : str    (Safe / Advisory / Warning / Emergency)
+    risk_score : float  (0–100)
+    risk_label : str    (Safe / Advisory / Warning / Emergency)
     """
-    # Clamp inputs to valid ranges to prevent edge-case crashes
-    temperature = float(np.clip(temperature, 0,   50))
-    humidity    = float(np.clip(humidity,    0,  100))
-    aqi         = float(np.clip(aqi,         0,  300))
+    t = _fuzzify_temperature(temperature)
+    h = _fuzzify_humidity(humidity)
+    a = _fuzzify_aqi(aqi)
 
-    try:
-        _fuzzy_sim.input['temperature'] = temperature
-        _fuzzy_sim.input['humidity']    = humidity
-        _fuzzy_sim.input['aqi']         = aqi
-        _fuzzy_sim.compute()
-        risk_score = round(float(_fuzzy_sim.output['risk']), 2)
-    except Exception:
-        # Fallback: weighted average if fuzzy system hits an edge case
+    # 15 IF-THEN rules: each entry is (firing_strength, output_mf)
+    rules = [
+        # Safe
+        (min(a["good"],      t["low"],       h["moderate"]), _r_safe),
+        (min(a["good"],      t["moderate"],  h["low"]),      _r_safe),
+        (min(a["good"],      t["low"],       h["low"]),      _r_safe),
+        # Advisory
+        (min(a["moderate"],  t["moderate"],  h["moderate"]), _r_advisory),
+        (min(a["good"],      t["high"],      h["high"]),     _r_advisory),
+        (min(a["moderate"],  t["low"],       h["high"]),     _r_advisory),
+        (min(a["moderate"],  t["high"],      h["low"]),      _r_advisory),
+        # Warning
+        (min(a["unhealthy"], t["moderate"],  h["moderate"]), _r_warning),
+        (min(a["unhealthy"], t["high"],      h["moderate"]), _r_warning),
+        (min(a["moderate"],  t["hazardous"], h["high"]),     _r_warning),
+        (min(a["unhealthy"], t["low"],       h["high"]),     _r_warning),
+        (min(a["hazardous"], t["low"],       h["low"]),      _r_warning),
+        # Emergency
+        (min(a["hazardous"], t["hazardous"], h["high"]),     _r_emergency),
+        (min(a["hazardous"], t["high"],      h["high"]),     _r_emergency),
+        (min(a["hazardous"], t["moderate"],  h["moderate"]), _r_emergency),
+        (min(a["unhealthy"], t["hazardous"], h["high"]),     _r_emergency),
+    ]
+
+    # Aggregate: clip each output MF at its firing strength, then take max
+    aggregated = np.zeros_like(_R)
+    for strength, mf in rules:
+        aggregated = np.maximum(aggregated, np.minimum(strength, mf))
+
+    # Defuzzify: centroid method
+    total = np.sum(aggregated)
+    if total < 1e-10:
+        # Fallback if no rule fires
         risk_score = round((aqi / 300) * 60 + (temperature / 50) * 25 + (humidity / 100) * 15, 2)
+    else:
+        risk_score = round(float(np.sum(_R * aggregated) / total), 2)
 
-    # Map score to linguistic label
+    # Map to linguistic label
     if risk_score <= 30:
         risk_label = "Safe"
     elif risk_score <= 55:
@@ -146,7 +158,7 @@ def compute_risk(temperature: float, humidity: float, aqi: float):
 
 
 def get_risk_color(risk_label: str) -> str:
-    """Return a hex color for a given risk label (used by dashboard)."""
+    """Return a hex colour for a given risk label."""
     return {
         "Safe":      "#2ecc71",
         "Advisory":  "#f1c40f",
