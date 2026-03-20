@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FuzzyEnvCloud — Dashboard</title>
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0f0f1a; color: #e0e0e0; min-height: 100vh; }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1a0a3c 0%, #2d1b69 100%);
+      padding: 14px 30px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 2px solid #7c4dff;
+      box-shadow: 0 4px 20px rgba(124,77,255,0.3);
+    }
+    header h1 { font-size: 1.4rem; color: #fff; }
+    header h1 span { color: #7c4dff; }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    #live-badge { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #a0a0b0; }
+    .pulse { width:10px; height:10px; border-radius:50%; background:#2ecc71; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(1.4)} }
+    .user-info { display:flex; align-items:center; gap:10px; font-size:0.82rem; }
+    .role-badge { padding:3px 10px; border-radius:10px; font-size:0.72rem; font-weight:700; }
+    .admin-badge  { background:rgba(124,77,255,0.25); color:#7c4dff; border:1px solid #7c4dff; }
+    .viewer-badge { background:rgba(46,204,113,0.2);  color:#2ecc71; border:1px solid #2ecc71; }
+    .logout-btn {
+      padding:5px 14px; background:transparent; border:1px solid #3a3a5a;
+      border-radius:6px; color:#888; font-size:0.8rem; cursor:pointer; text-decoration:none;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .logout-btn:hover { border-color:#7c4dff; color:#fff; }
+
+    /* ── Layout ── */
+    .container { padding: 22px 30px; max-width: 1400px; margin: 0 auto; }
+
+    /* ── Stat cards ── */
+    .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(175px,1fr)); gap:14px; margin-bottom:22px; }
+    .card { background:#1a1a2e; border:1px solid #2a2a4a; border-radius:12px; padding:16px 18px; transition:transform 0.2s; }
+    .card:hover { transform:translateY(-3px); }
+    .card .label { font-size:0.72rem; text-transform:uppercase; letter-spacing:1px; color:#888; margin-bottom:7px; }
+    .card .value { font-size:1.9rem; font-weight:700; color:#fff; }
+    .card .sub   { font-size:0.78rem; color:#888; margin-top:3px; }
+    .gauge-card  { background:#1a1a2e; border:1px solid #2a2a4a; border-radius:12px; padding:16px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .gauge-label { font-size:0.72rem; text-transform:uppercase; letter-spacing:1px; color:#888; margin-bottom:7px; }
+    .risk-score-big { font-size:2.6rem; font-weight:800; color:#fff; line-height:1; }
+    .risk-badge { font-size:1rem; font-weight:700; padding:5px 18px; border-radius:16px; margin-top:6px; transition:all 0.5s; }
+
+    /* ── Charts ── */
+    .charts-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:22px; }
+    .chart-box { background:#1a1a2e; border:1px solid #2a2a4a; border-radius:12px; padding:14px; }
+    .chart-box h3 { font-size:0.82rem; text-transform:uppercase; letter-spacing:1px; color:#a0a0c0; margin-bottom:10px; }
+    .chart-box.full { grid-column: 1 / -1; }
+
+    /* ── Benchmark panel ── */
+    .benchmark-box { background:#1a1a2e; border:1px solid #2a2a4a; border-radius:12px; padding:20px; margin-bottom:22px; }
+    .benchmark-box h3 { font-size:0.82rem; text-transform:uppercase; letter-spacing:1px; color:#a0a0c0; margin-bottom:14px; }
+    .bench-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    #run-bench-btn {
+      padding:9px 22px; background:#7c4dff; border:none; border-radius:8px;
+      color:#fff; font-size:0.88rem; font-weight:600; cursor:pointer; margin-bottom:16px;
+      transition: background 0.2s;
+    }
+    #run-bench-btn:hover { background:#6a3de8; }
+    #run-bench-btn:disabled { background:#3a3a5a; cursor:not-allowed; }
+    .bench-table { width:100%; border-collapse:collapse; font-size:0.85rem; margin-top:10px; }
+    .bench-table th { text-align:left; padding:8px 10px; color:#888; border-bottom:1px solid #2a2a4a; font-weight:500; }
+    .bench-table td { padding:8px 10px; border-bottom:1px solid #1e1e35; }
+    .saving { color:#2ecc71; font-weight:600; }
+    .admin-only-note { font-size:0.8rem; color:#555; font-style:italic; }
+
+    /* ── MF reference ── */
+    .mf-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(195px,1fr)); gap:12px; margin-bottom:22px; }
+    .mf-card { background:#1a1a2e; border:1px solid #2a2a4a; border-radius:10px; padding:14px; }
+    .mf-card h4 { font-size:0.78rem; color:#7c4dff; margin-bottom:8px; text-transform:uppercase; }
+    .mf-row { display:flex; justify-content:space-between; font-size:0.8rem; padding:4px 0; border-bottom:1px solid #1e1e35; }
+    .mf-row:last-child { border:none; }
+    .mf-range { color:#a0a0c0; }
+
+    /* ── Alerts ── */
+    .alerts-box { background:#1a1a2e; border:1px solid #2a2a4a; border-radius:12px; padding:18px; margin-bottom:22px; }
+    .alerts-box h3 { font-size:0.82rem; text-transform:uppercase; letter-spacing:1px; color:#a0a0c0; margin-bottom:12px; }
+    table { width:100%; border-collapse:collapse; font-size:0.86rem; }
+    th { text-align:left; padding:8px 10px; color:#888; border-bottom:1px solid #2a2a4a; font-weight:500; }
+    td { padding:9px 10px; border-bottom:1px solid #1e1e35; }
+    tr:hover td { background:#1e1e35; }
+    .badge { display:inline-block; padding:3px 10px; border-radius:12px; font-size:0.76rem; font-weight:600; }
+
+    footer { text-align:center; padding:14px; color:#555; font-size:0.78rem; border-top:1px solid #2a2a4a; }
+    #last-updated { font-size:0.76rem; color:#666; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Fuzzy<span>Env</span>Cloud &nbsp;|&nbsp; Environmental Monitor</h1>
+  <div class="header-right">
+    <div id="live-badge">
+      <div class="pulse"></div>
+      <span>LIVE</span>
+      <span id="last-updated">—</span>
+    </div>
+    <div class="user-info">
+      <span style="color:#888">{{ username }}</span>
+      <span class="role-badge {{ 'admin-badge' if role == 'admin' else 'viewer-badge' }}">
+        {{ role | upper }}
+      </span>
+      <a href="/logout" class="logout-btn">Logout</a>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Stat Cards -->
+  <div class="cards">
+    <div class="card">
+      <div class="label">Total Readings</div>
+      <div class="value" id="total-readings">—</div>
+      <div class="sub">since start</div>
+    </div>
+    <div class="card">
+      <div class="label">Avg Temperature</div>
+      <div class="value" id="avg-temp">—</div>
+      <div class="sub">°C</div>
+    </div>
+    <div class="card">
+      <div class="label">Avg Humidity</div>
+      <div class="value" id="avg-hum">—</div>
+      <div class="sub">%</div>
+    </div>
+    <div class="card">
+      <div class="label">Avg AQI</div>
+      <div class="value" id="avg-aqi">—</div>
+      <div class="sub">Air Quality Index</div>
+    </div>
+    <div class="card">
+      <div class="label">Total Alerts</div>
+      <div class="value" id="alert-count" style="color:#e74c3c">—</div>
+      <div class="sub">Warning + Emergency</div>
+    </div>
+    <div class="gauge-card">
+      <div class="gauge-label">Current Risk Score</div>
+      <div class="risk-score-big" id="risk-score-big">—</div>
+      <div class="risk-badge" id="risk-badge">—</div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <div class="chart-box">
+      <h3>🌡 Temperature (°C)</h3>
+      <div id="chart-temp" style="height:210px"></div>
+    </div>
+    <div class="chart-box">
+      <h3>💧 Humidity (%)</h3>
+      <div id="chart-hum" style="height:210px"></div>
+    </div>
+    <div class="chart-box">
+      <h3>🌫 Air Quality Index</h3>
+      <div id="chart-aqi" style="height:210px"></div>
+    </div>
+    <div class="chart-box">
+      <h3>🔮 Fuzzy Risk Score (0–100)</h3>
+      <div id="chart-risk" style="height:210px"></div>
+    </div>
+  </div>
+
+  <!-- Benchmark Panel (Gap 1 — Scalability Proof) -->
+  <div class="benchmark-box">
+    <h3>⚡ Gap 1 — Scalability Benchmark: Serverless vs VM-Based</h3>
+    {% if role == 'admin' %}
+      <button id="run-bench-btn" onclick="runBenchmark()">▶ Run Benchmark</button>
+    {% else %}
+      <p class="admin-only-note">⚠ Benchmark is available to admin users only.</p>
+    {% endif %}
+    <div id="bench-results" style="display:none">
+      <div class="bench-grid">
+        <div>
+          <div id="chart-bench" style="height:240px"></div>
+        </div>
+        <div>
+          <table class="bench-table">
+            <thead>
+              <tr>
+                <th>Load (req/min)</th>
+                <th>Serverless (ms)</th>
+                <th>VM-Based (ms)</th>
+                <th>Cost Saving</th>
+              </tr>
+            </thead>
+            <tbody id="bench-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Membership Function Reference -->
+  <div class="mf-grid">
+    <div class="mf-card">
+      <h4>🌡 Temperature MFs</h4>
+      <div class="mf-row"><span>Low</span>       <span class="mf-range">0–20°C</span></div>
+      <div class="mf-row"><span>Moderate</span>  <span class="mf-range">15–30°C</span></div>
+      <div class="mf-row"><span>High</span>      <span class="mf-range">25–40°C</span></div>
+      <div class="mf-row"><span>Hazardous</span> <span class="mf-range">35–50°C</span></div>
+    </div>
+    <div class="mf-card">
+      <h4>💧 Humidity MFs</h4>
+      <div class="mf-row"><span>Low</span>      <span class="mf-range">0–40%</span></div>
+      <div class="mf-row"><span>Moderate</span> <span class="mf-range">30–70%</span></div>
+      <div class="mf-row"><span>High</span>     <span class="mf-range">60–100%</span></div>
+    </div>
+    <div class="mf-card">
+      <h4>🌫 AQI MFs</h4>
+      <div class="mf-row"><span>Good</span>      <span class="mf-range">0–50</span></div>
+      <div class="mf-row"><span>Moderate</span>  <span class="mf-range">40–100</span></div>
+      <div class="mf-row"><span>Unhealthy</span> <span class="mf-range">90–200</span></div>
+      <div class="mf-row"><span>Hazardous</span> <span class="mf-range">175–300</span></div>
+    </div>
+    <div class="mf-card">
+      <h4>🔮 Risk Output MFs</h4>
+      <div class="mf-row"><span style="color:#2ecc71">Safe</span>      <span class="mf-range">0–30</span></div>
+      <div class="mf-row"><span style="color:#f1c40f">Advisory</span>  <span class="mf-range">31–55</span></div>
+      <div class="mf-row"><span style="color:#e67e22">Warning</span>   <span class="mf-range">56–75</span></div>
+      <div class="mf-row"><span style="color:#e74c3c">Emergency</span> <span class="mf-range">76–100</span></div>
+    </div>
+  </div>
+
+  <!-- Alerts Table -->
+  <div class="alerts-box">
+    <h3>🚨 Recent Alerts Log (Gap 3 — Closed-Loop Response)</h3>
+    <table>
+      <thead>
+        <tr><th>Timestamp</th><th>Level</th><th>Risk Score</th><th>Temp (°C)</th><th>Humidity (%)</th><th>AQI</th></tr>
+      </thead>
+      <tbody id="alerts-tbody">
+        <tr><td colspan="6" style="color:#555;text-align:center;padding:20px">No alerts yet — monitoring...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<footer>
+  FuzzyEnvCloud &nbsp;|&nbsp; Mamdani Fuzzy Inference &nbsp;|&nbsp;
+  Role-Based Access Control &nbsp;|&nbsp; Serverless Architecture &nbsp;|&nbsp; Semester Project
+</footer>
+
+<script>
+  const darkLayout = (yTitle) => ({
+    paper_bgcolor:'transparent', plot_bgcolor:'transparent',
+    font:{color:'#a0a0c0',size:11},
+    margin:{t:10,b:40,l:50,r:10},
+    xaxis:{gridcolor:'#2a2a4a',zerolinecolor:'#2a2a4a',nticks:6},
+    yaxis:{gridcolor:'#2a2a4a',zerolinecolor:'#2a2a4a',title:{text:yTitle,font:{size:10}}},
+    showlegend:false,
+  });
+  const config = {displayModeBar:false, responsive:true};
+
+  Plotly.newPlot('chart-temp',[{x:[],y:[],type:'scatter',mode:'lines',line:{color:'#ff6b6b',width:2},fill:'tozeroy',fillcolor:'rgba(255,107,107,0.1)'}],darkLayout('°C'),config);
+  Plotly.newPlot('chart-hum', [{x:[],y:[],type:'scatter',mode:'lines',line:{color:'#4ecdc4',width:2},fill:'tozeroy',fillcolor:'rgba(78,205,196,0.1)'}],darkLayout('%'),config);
+  Plotly.newPlot('chart-aqi', [{x:[],y:[],type:'scatter',mode:'lines',line:{color:'#a29bfe',width:2},fill:'tozeroy',fillcolor:'rgba(162,155,254,0.1)'}],darkLayout('AQI'),config);
+  Plotly.newPlot('chart-risk',[{x:[],y:[],type:'scatter',mode:'lines+markers',line:{color:'#7c4dff',width:2.5},marker:{color:[],size:6,colorscale:[[0,'#2ecc71'],[0.3,'#f1c40f'],[0.55,'#e67e22'],[1,'#e74c3c']],cmin:0,cmax:100},fill:'tozeroy',fillcolor:'rgba(124,77,255,0.08)'}],darkLayout('Score'),config);
+
+  async function refresh() {
+    try {
+      const [dataRes, alertsRes, statsRes] = await Promise.all([
+        fetch('/api/data'), fetch('/api/alerts'), fetch('/api/stats')
+      ]);
+      const data   = await dataRes.json();
+      const alerts = await alertsRes.json();
+      const stats  = await statsRes.json();
+      updateCharts(data);
+      updateStats(stats);
+      updateAlerts(alerts);
+      document.getElementById('last-updated').textContent =
+        'Updated ' + new Date().toLocaleTimeString();
+    } catch(e) { console.error(e); }
+  }
+
+  function updateCharts(data) {
+    if (!data.length) return;
+    const ts=data.map(d=>d.timestamp), temp=data.map(d=>d.temperature),
+          hum=data.map(d=>d.humidity), aqi=data.map(d=>d.aqi),
+          risk=data.map(d=>d.risk_score);
+    Plotly.update('chart-temp',{x:[ts],y:[temp]});
+    Plotly.update('chart-hum', {x:[ts],y:[hum]});
+    Plotly.update('chart-aqi', {x:[ts],y:[aqi]});
+    Plotly.update('chart-risk',{x:[ts],y:[risk],'marker.color':[risk]});
+  }
+
+  function updateStats(stats) {
+    const a = stats.averages || {};
+    document.getElementById('total-readings').textContent = stats.total_readings || 0;
+    document.getElementById('avg-temp').textContent  = a.avg_temp ? a.avg_temp.toFixed(1) : '—';
+    document.getElementById('avg-hum').textContent   = a.avg_hum  ? a.avg_hum.toFixed(1)  : '—';
+    document.getElementById('avg-aqi').textContent   = a.avg_aqi  ? a.avg_aqi.toFixed(1)  : '—';
+    document.getElementById('alert-count').textContent = stats.alert_count || 0;
+    if (stats.latest) {
+      const {risk_score:score, risk_label:label, color} = stats.latest;
+      document.getElementById('risk-score-big').textContent = score.toFixed(1);
+      const badge = document.getElementById('risk-badge');
+      badge.textContent = label;
+      badge.style.cssText = `background:${color}33;color:${color};border:1px solid ${color}`;
+    }
+  }
+
+  function updateAlerts(alerts) {
+    const tbody = document.getElementById('alerts-tbody');
+    if (!alerts.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="color:#555;text-align:center;padding:20px">No alerts yet — monitoring...</td></tr>';
+      return;
+    }
+    tbody.innerHTML = alerts.map(a => `
+      <tr>
+        <td>${a.timestamp}</td>
+        <td><span class="badge" style="background:${a.color}33;color:${a.color};border:1px solid ${a.color}">${a.risk_label}</span></td>
+        <td>${a.risk_score.toFixed(1)}</td>
+        <td>${a.temperature.toFixed(1)}</td>
+        <td>${a.humidity.toFixed(1)}</td>
+        <td>${a.aqi.toFixed(1)}</td>
+      </tr>`).join('');
+  }
+
+  async function runBenchmark() {
+    const btn = document.getElementById('run-bench-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Running...';
+    try {
+      const res  = await fetch('/api/benchmark');
+      const data = await res.json();
+      if (data.error) { alert(data.error); return; }
+      document.getElementById('bench-results').style.display = 'block';
+
+      // Response time chart
+      Plotly.newPlot('chart-bench', [
+        {x:data.loads, y:data.serverless, name:'Serverless', mode:'lines+markers',
+         line:{color:'#7c4dff',width:2.5}, marker:{size:7}},
+        {x:data.loads, y:data.vm_based,   name:'VM-Based',   mode:'lines+markers',
+         line:{color:'#e74c3c',width:2.5}, marker:{size:7}},
+      ], {
+        ...darkLayout('Response Time (ms)'),
+        showlegend: true,
+        legend: {font:{color:'#a0a0c0'}, bgcolor:'transparent'},
+        xaxis: {title:{text:'Load (req/min)',font:{size:10}}, gridcolor:'#2a2a4a'},
+      }, config);
+
+      // Cost table
+      document.getElementById('bench-tbody').innerHTML = data.cost.map(c => `
+        <tr>
+          <td>${c.load}</td>
+          <td>$${c.serverless_cost}</td>
+          <td>$${c.vm_cost.toFixed(2)}</td>
+          <td class="saving">↓ ${c.saving_percent}%</td>
+        </tr>`).join('');
+
+      btn.textContent = '✓ Done — Run Again';
+    } catch(e) {
+      console.error(e);
+      btn.textContent = '▶ Run Benchmark';
+    }
+    btn.disabled = false;
+  }
+
+  refresh();
+  setInterval(refresh, 5000);
+</script>
+</body>
+</html>

@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FuzzyEnvCloud — Presentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #080812;
+    --surface:  #10102a;
+    --card:     #151530;
+    --border:   #252548;
+    --purple:   #7c4dff;
+    --teal:     #00bcd4;
+    --green:    #2ecc71;
+    --orange:   #e67e22;
+    --red:      #e74c3c;
+    --yellow:   #f1c40f;
+    --white:    #f0f0ff;
+    --muted:    #8888aa;
+    --dim:      #3a3a5a;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { width: 100%; height: 100%; background: var(--bg); overflow: hidden; font-family: 'DM Sans', sans-serif; color: var(--white); }
+
+  /* ── SLIDE CONTAINER ── */
+  #deck { width: 100vw; height: 100vh; position: relative; }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    transform: translateY(18px);
+    overflow: hidden;
+  }
+  .slide.active {
+    opacity: 1; pointer-events: all;
+    transform: translateY(0);
+  }
+
+  /* ── AMBIENT BG ── */
+  .orb {
+    position: absolute; border-radius: 50%; filter: blur(80px); pointer-events: none; z-index: 0;
+  }
+
+  /* ── HEADER ── */
+  .slide-header {
+    position: relative; z-index: 2;
+    padding: 22px 48px 0;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .slide-header h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(16px, 2.2vw, 24px);
+    font-weight: 700; color: var(--white);
+    letter-spacing: -0.02em;
+  }
+  .slide-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px; font-weight: 600;
+    color: var(--muted); letter-spacing: 2px;
+  }
+
+  /* ── CONTENT ── */
+  .slide-body {
+    position: relative; z-index: 2;
+    flex: 1; padding: 24px 48px 16px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 22px;
+  }
+  .card-accent { border-left-width: 3px; }
+
+  /* ── GRID ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+  /* ── TYPOGRAPHY ── */
+  .label {
+    font-size: 10px; font-weight: 600; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
+  }
+  .title-lg { font-family: 'Syne', sans-serif; font-size: clamp(36px, 6vw, 72px); font-weight: 800; letter-spacing: -0.04em; line-height: 1; }
+  .title-md { font-family: 'Syne', sans-serif; font-size: clamp(16px, 2.2vw, 22px); font-weight: 700; }
+  .body-sm { font-size: clamp(11px, 1.1vw, 13px); line-height: 1.65; color: var(--muted); font-weight: 300; }
+  .body-md { font-size: clamp(12px, 1.3vw, 15px); line-height: 1.6; color: var(--muted); }
+  .accent { color: var(--purple); }
+  .stat-num { font-family: 'Syne', sans-serif; font-size: clamp(28px, 4vw, 48px); font-weight: 800; line-height: 1; }
+
+  /* ── DIVIDER ── */
+  .divider { height: 1px; background: var(--border); margin: 2px 0; }
+
+  /* ── PILL ── */
+  .pill {
+    display: inline-block; padding: 3px 12px; border-radius: 20px;
+    font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+  }
+
+  /* ── FLOW STEP ── */
+  .flow { display: flex; align-items: center; gap: 0; }
+  .flow-step {
+    flex: 1; background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 8px; text-align: center;
+  }
+  .flow-arrow { color: var(--dim); font-size: 18px; padding: 0 6px; flex-shrink: 0; }
+
+  /* ── TABLE ── */
+  .ptable { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .ptable th { text-align: left; padding: 8px 12px; color: var(--muted); font-weight: 500; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+  .ptable td { padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .ptable tr:last-child td { border-bottom: none; }
+
+  /* ── CHECK ── */
+  .check-y { color: var(--green); font-weight: 700; }
+  .check-n { color: var(--red); font-weight: 700; }
+
+  /* ── PROGRESS BAR ── */
+  .bar-wrap { background: var(--border); border-radius: 4px; height: 6px; overflow: hidden; margin-top: 6px; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+
+  /* ── NAV ── */
+  #nav {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 12px; z-index: 100;
+    background: rgba(16,16,42,0.9); backdrop-filter: blur(12px);
+    border: 1px solid var(--border); border-radius: 50px;
+    padding: 10px 20px;
+  }
+  #nav button {
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 16px; padding: 4px 8px; border-radius: 6px;
+    transition: color 0.2s, background 0.2s;
+  }
+  #nav button:hover { color: var(--white); background: var(--border); }
+  #nav button.active-nav { color: var(--white); }
+  #slide-counter { font-family: 'Syne', sans-serif; font-size: 12px; color: var(--muted); min-width: 48px; text-align: center; }
+  .dot-row { display: flex; gap: 5px; align-items: center; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--dim); cursor: pointer; transition: all 0.2s; }
+  .dot.on { background: var(--purple); transform: scale(1.3); }
+
+  /* ── PROGRESS LINE ── */
+  #progress { position: fixed; top: 0; left: 0; height: 2px; background: var(--purple); transition: width 0.4s ease; z-index: 200; }
+
+  /* ── KEYBOARD HINT ── */
+  #kb-hint { position: fixed; bottom: 24px; right: 28px; font-size: 10px; color: var(--dim); letter-spacing: 1px; }
+
+  /* Accent border colors */
+  .acc-purple { border-left-color: var(--purple) !important; }
+  .acc-teal   { border-left-color: var(--teal)   !important; }
+  .acc-green  { border-left-color: var(--green)  !important; }
+  .acc-orange { border-left-color: var(--orange) !important; }
+  .acc-red    { border-left-color: var(--red)    !important; }
+  .acc-yellow { border-left-color: var(--yellow) !important; }
+
+  /* ── CHART BARS ── */
+  .chart-bar-wrap { display: flex; align-items: flex-end; gap: 10px; height: 120px; }
+  .chart-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .chart-bar { width: 100%; border-radius: 4px 4px 0 0; transition: height 1s ease; }
+  .chart-bar-label { font-size: 10px; color: var(--muted); }
+  .chart-bar-val { font-size: 11px; font-weight: 600; }
+
+  /* ── MINI LINE CHART ── */
+  .line-chart { position: relative; height: 100px; }
+  .line-chart svg { width: 100%; height: 100%; }
+
+  /* Animation helpers */
+  @keyframes fadeUp { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+  .slide.active .card  { animation: fadeUp 0.4s ease both; }
+  .slide.active .card:nth-child(2) { animation-delay: 0.07s; }
+  .slide.active .card:nth-child(3) { animation-delay: 0.14s; }
+  .slide.active .card:nth-child(4) { animation-delay: 0.21s; }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<div id="deck">
+
+  <!-- ══ SLIDE 1 — TITLE ══ -->
+  <div class="slide active" id="s1">
+    <div class="orb" style="width:520px;height:520px;background:var(--purple);opacity:.12;top:-180px;left:-120px;"></div>
+    <div class="orb" style="width:380px;height:380px;background:var(--teal);opacity:.09;bottom:-100px;right:-60px;"></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:40px;position:relative;z-index:2;">
+      <div class="label" style="letter-spacing:4px;">Cloud Computing &nbsp;·&nbsp; Semester Project</div>
+      <div class="title-lg" style="text-align:center;background:linear-gradient(135deg,#fff 30%,var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">FuzzyEnvCloud</div>
+      <div style="font-size:clamp(13px,1.6vw,18px);color:var(--muted);text-align:center;max-width:640px;font-style:italic;font-weight:300;line-height:1.5;">Cloud-IoT Environmental Monitoring<br>with Fuzzy Mamdani Inference &amp; Machine Learning</div>
+
+      <div style="display:flex;gap:14px;margin-top:16px;">
+        <div style="padding:14px 28px;background:var(--card);border:1px solid var(--border);border-radius:12px;text-align:center;">
+          <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--purple);">Kundan</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">Architecture &amp; Fuzzy Engine</div>
+        </div>
+        <div style="padding:14px 28px;background:var(--card);border:1px solid var(--border);border-radius:12px;text-align:center;">
+          <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--teal);">Riddhi</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">Security &amp; Data Export</div>
+        </div>
+        <div style="padding:14px 28px;background:var(--card);border:1px solid var(--border);border-radius:12px;text-align:center;">
+          <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--green);">Priyant</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">ML Forecasting &amp; Results</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 2 — OUTLINE ══ -->
+  <div class="slide" id="s2">
+    <div class="orb" style="width:300px;height:300px;background:var(--purple);opacity:.07;top:-60px;right:60px;"></div>
+    <div class="slide-header"><h2>Presentation Outline</h2><span class="slide-num">02 / 11</span></div>
+    <div class="slide-body">
+      <div class="grid-2" style="flex:1;">
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div class="label">Kundan</div>
+          <div class="card card-accent acc-purple" style="flex:1;">
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;gap:12px;align-items:center;"><span style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--purple);min-width:24px;">01</span><span class="body-md" style="color:var(--white);">Problem Statement</span></div>
+              <div style="display:flex;gap:12px;align-items:center;"><span style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--purple);min-width:24px;">02</span><span class="body-md" style="color:var(--white);">System Architecture</span></div>
+              <div style="display:flex;gap:12px;align-items:center;"><span style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--purple);min-width:24px;">03</span><span class="body-md" style="color:var(--white);">Fuzzy Logic Engine</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div class="label">Riddhi</div>
+          <div class="card card-accent acc-teal">
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;gap:12px;align-items:center;"><span style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--teal);min-width:24px;">04</span><span class="body-md" style="color:var(--white);">Security &amp; RBAC</span></div>
+              <div style="display:flex;gap:12px;align-items:center;"><span style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--teal);min-width:24px;">05</span><span class="body-md" style="color:var(--white);">Admin Panel &amp; CSV Export</span></div>
+            </div>
+          </div>
+          <div class="label" style="margin-top:8px;">Priyant</div>
+          <div class="card card-accent acc-green">
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;gap:12px;align-items:center;"><span style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--green);min-width:24px;">06</span><span class="body-md" style="color:var(--white);">ML Forecasting Layer</span></div>
+              <div style="display:flex;gap:12px;align-items:center;"><span style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--green);min-width:24px;">07</span><span class="body-md" style="color:var(--white);">Results &amp; Live Demo</span></div>
+              <div style="display:flex;gap:12px;align-items:center;"><span style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--green);min-width:24px;">08</span><span class="body-md" style="color:var(--white);">Conclusion &amp; Future Work</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 3 — PROBLEM ══ -->
+  <div class="slide" id="s3">
+    <div class="orb" style="width:400px;height:400px;background:var(--red);opacity:.07;bottom:-100px;right:-80px;"></div>
+    <div class="slide-header"><h2>Problem Statement — Why Did We Build This?</h2><span class="slide-num">03 / 11</span></div>
+    <div class="slide-body" style="justify-content:center;">
+      <div class="card card-accent acc-yellow">
+        <div style="display:flex;gap:16px;align-items:flex-start;">
+          <div style="font-size:28px;line-height:1;">💸</div>
+          <div>
+            <div class="title-md" style="color:var(--yellow);">Gap 1 — Cost Inefficiency</div>
+            <div class="body-md" style="margin-top:6px;">Traditional always-on VM servers waste money even when no data is coming in. We need a pay-per-use serverless architecture that scales automatically.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card card-accent acc-red">
+        <div style="display:flex;gap:16px;align-items:flex-start;">
+          <div style="font-size:28px;line-height:1;">🔓</div>
+          <div>
+            <div class="title-md" style="color:var(--red);">Gap 2 — No Security</div>
+            <div class="body-md" style="margin-top:6px;">Most IoT dashboards have zero access control — anyone can view or modify data. Real systems need proper user roles and identity management.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card card-accent acc-orange">
+        <div style="display:flex;gap:16px;align-items:flex-start;">
+          <div style="font-size:28px;line-height:1;">⚠️</div>
+          <div>
+            <div class="title-md" style="color:var(--orange);">Gap 3 — Reactive Alerts Only</div>
+            <div class="body-md" style="margin-top:6px;">Existing systems only alert AFTER danger arrives. We want to predict future readings and warn BEFORE hazardous conditions actually occur.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 4 — ARCHITECTURE ══ -->
+  <div class="slide" id="s4">
+    <div class="orb" style="width:320px;height:320px;background:var(--purple);opacity:.08;top:-80px;left:-60px;"></div>
+    <div class="slide-header"><h2>System Architecture</h2><span class="slide-num">04 / 11</span></div>
+    <div class="slide-body">
+      <!-- Flow -->
+      <div class="flow">
+        <div class="flow-step" style="border-color:var(--purple);">
+          <div style="font-size:18px;margin-bottom:4px;">📡</div>
+          <div style="font-size:11px;font-weight:600;color:var(--purple);">IoT Simulator</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:2px;">Python</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step" style="border-color:var(--teal);">
+          <div style="font-size:18px;margin-bottom:4px;">🗄️</div>
+          <div style="font-size:11px;font-weight:600;color:var(--teal);">SQLite DB</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:2px;">Cloud Store</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step" style="border-color:var(--purple);">
+          <div style="font-size:18px;margin-bottom:4px;">🔮</div>
+          <div style="font-size:11px;font-weight:600;color:var(--purple);">Fuzzy Engine</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:2px;">Mamdani FIS</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step" style="border-color:var(--green);">
+          <div style="font-size:18px;margin-bottom:4px;">🤖</div>
+          <div style="font-size:11px;font-weight:600;color:var(--green);">ML Forecaster</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:2px;">Linear Reg.</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step" style="border-color:var(--orange);">
+          <div style="font-size:18px;margin-bottom:4px;">🚨</div>
+          <div style="font-size:11px;font-weight:600;color:var(--orange);">Alert System</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:2px;">Email + Log</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step" style="border-color:var(--teal);">
+          <div style="font-size:18px;margin-bottom:4px;">📊</div>
+          <div style="font-size:11px;font-weight:600;color:var(--teal);">Dashboard</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:2px;">Flask + Web</div>
+        </div>
+      </div>
+
+      <!-- IAM bar -->
+      <div style="background:rgba(124,77,255,0.08);border:1px dashed var(--purple);border-radius:10px;padding:10px 18px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:16px;">🔒</span>
+        <span style="font-size:12px;font-weight:600;color:var(--purple);">IAM Role-Based Access Control — All components secured</span>
+      </div>
+
+      <!-- 2 col details -->
+      <div class="grid-2" style="flex:1;">
+        <div class="card">
+          <div class="label">Sensor Details</div>
+          <div style="display:flex;flex-direction:column;gap:7px;margin-top:8px;">
+            <div style="display:flex;justify-content:space-between;"><span class="body-sm">Reading interval</span><span style="font-size:12px;font-weight:600;color:var(--white);">5 seconds</span></div>
+            <div class="divider"></div>
+            <div style="display:flex;justify-content:space-between;"><span class="body-sm">Anomaly injection</span><span style="font-size:12px;font-weight:600;color:var(--white);">8%</span></div>
+            <div class="divider"></div>
+            <div style="display:flex;justify-content:space-between;"><span class="body-sm">Inputs monitored</span><span style="font-size:12px;font-weight:600;color:var(--white);">Temp · Humidity · AQI</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="label">Cloud Mapping</div>
+          <div style="display:flex;flex-direction:column;gap:7px;margin-top:8px;">
+            <div style="display:flex;justify-content:space-between;"><span class="body-sm">SQLite</span><span style="font-size:12px;font-weight:600;color:var(--teal);">→ DynamoDB</span></div>
+            <div class="divider"></div>
+            <div style="display:flex;justify-content:space-between;"><span class="body-sm">Flask routes</span><span style="font-size:12px;font-weight:600;color:var(--teal);">→ API Gateway + Lambda</span></div>
+            <div class="divider"></div>
+            <div style="display:flex;justify-content:space-between;"><span class="body-sm">Local files</span><span style="font-size:12px;font-weight:600;color:var(--teal);">→ S3 Bucket</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 5 — FUZZY ══ -->
+  <div class="slide" id="s5">
+    <div class="orb" style="width:340px;height:340px;background:var(--purple);opacity:.09;bottom:-80px;left:-60px;"></div>
+    <div class="slide-header"><h2>Fuzzy Logic Engine — How Risk is Calculated</h2><span class="slide-num">05 / 11</span></div>
+    <div class="slide-body">
+      <!-- 5-step flow -->
+      <div class="flow" style="gap:0;">
+        <div class="flow-step" style="border-color:var(--teal);"><div style="font-size:10px;font-weight:700;color:var(--teal);">INPUTS</div><div style="font-size:9px;color:var(--muted);margin-top:3px;">Temp · Hum · AQI</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step" style="border-color:var(--purple);"><div style="font-size:10px;font-weight:700;color:var(--purple);">FUZZIFY</div><div style="font-size:9px;color:var(--muted);margin-top:3px;">Crisp → Degrees</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step" style="border-color:var(--purple);"><div style="font-size:10px;font-weight:700;color:var(--purple);">15 RULES</div><div style="font-size:9px;color:var(--muted);margin-top:3px;">IF-THEN Logic</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step" style="border-color:var(--purple);"><div style="font-size:10px;font-weight:700;color:var(--purple);">AGGREGATE</div><div style="font-size:9px;color:var(--muted);margin-top:3px;">Combine outputs</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step" style="border-color:var(--green);"><div style="font-size:10px;font-weight:700;color:var(--green);">DEFUZZIFY</div><div style="font-size:9px;color:var(--muted);margin-top:3px;">Centroid → Score</div></div>
+      </div>
+
+      <!-- Risk levels -->
+      <div class="grid-2">
+        <div>
+          <div class="label">Input Membership Sets</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+            <div class="card" style="padding:10px 14px;border-left:3px solid var(--red);">
+              <div style="font-size:11px;font-weight:600;color:var(--red);">Temperature</div>
+              <div class="body-sm" style="margin-top:3px;">Low · Moderate · High · Hazardous</div>
+            </div>
+            <div class="card" style="padding:10px 14px;border-left:3px solid var(--teal);">
+              <div style="font-size:11px;font-weight:600;color:var(--teal);">Humidity</div>
+              <div class="body-sm" style="margin-top:3px;">Low · Moderate · High</div>
+            </div>
+            <div class="card" style="padding:10px 14px;border-left:3px solid var(--purple);">
+              <div style="font-size:11px;font-weight:600;color:var(--purple);">Air Quality Index</div>
+              <div class="body-sm" style="margin-top:3px;">Good · Moderate · Unhealthy · Hazardous</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="label">Output Risk Levels</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="flex:1;background:var(--card);border-radius:8px;padding:10px 14px;border-left:3px solid var(--green);">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <span style="font-size:12px;font-weight:600;color:var(--green);">Safe</span>
+                  <span style="font-size:11px;color:var(--muted);">0 – 30</span>
+                </div>
+                <div class="bar-wrap"><div class="bar-fill" style="width:30%;background:var(--green);"></div></div>
+              </div>
+            </div>
+            <div style="flex:1;background:var(--card);border-radius:8px;padding:10px 14px;border-left:3px solid var(--yellow);">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:12px;font-weight:600;color:var(--yellow);">Advisory</span>
+                <span style="font-size:11px;color:var(--muted);">31 – 55</span>
+              </div>
+              <div class="bar-wrap"><div class="bar-fill" style="width:55%;background:var(--yellow);"></div></div>
+            </div>
+            <div style="flex:1;background:var(--card);border-radius:8px;padding:10px 14px;border-left:3px solid var(--orange);">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:12px;font-weight:600;color:var(--orange);">Warning</span>
+                <span style="font-size:11px;color:var(--muted);">56 – 75</span>
+              </div>
+              <div class="bar-wrap"><div class="bar-fill" style="width:75%;background:var(--orange);"></div></div>
+            </div>
+            <div style="flex:1;background:var(--card);border-radius:8px;padding:10px 14px;border-left:3px solid var(--red);">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:12px;font-weight:600;color:var(--red);">Emergency</span>
+                <span style="font-size:11px;color:var(--muted);">76 – 100</span>
+              </div>
+              <div class="bar-wrap"><div class="bar-fill" style="width:100%;background:var(--red);"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 6 — RBAC ══ -->
+  <div class="slide" id="s6">
+    <div class="orb" style="width:300px;height:300px;background:var(--teal);opacity:.07;top:-60px;right:-40px;"></div>
+    <div class="slide-header"><h2>Security — Role-Based Access Control</h2><span class="slide-num">06 / 11</span></div>
+    <div class="slide-body">
+      <div class="grid-2" style="flex:1;align-items:start;">
+        <div class="card card-accent acc-teal" style="height:100%;">
+          <div class="label">IAM-Style Access Control</div>
+          <div style="display:flex;flex-direction:column;gap:9px;margin-top:12px;">
+            <div style="display:flex;gap:10px;align-items:flex-start;"><span style="color:var(--teal);font-size:14px;margin-top:1px;">✦</span><span class="body-md">Session-based login with Flask</span></div>
+            <div style="display:flex;gap:10px;align-items:flex-start;"><span style="color:var(--teal);font-size:14px;margin-top:1px;">✦</span><span class="body-md">Two roles: <strong style="color:var(--white);">Admin</strong> &amp; <strong style="color:var(--white);">Viewer</strong></span></div>
+            <div style="display:flex;gap:10px;align-items:flex-start;"><span style="color:var(--teal);font-size:14px;margin-top:1px;">✦</span><span class="body-md"><code style="font-size:11px;color:var(--teal);">@login_required</code> on all routes</span></div>
+            <div style="display:flex;gap:10px;align-items:flex-start;"><span style="color:var(--teal);font-size:14px;margin-top:1px;">✦</span><span class="body-md"><code style="font-size:11px;color:var(--teal);">@admin_required</code> for sensitive APIs</span></div>
+            <div style="display:flex;gap:10px;align-items:flex-start;"><span style="color:var(--teal);font-size:14px;margin-top:1px;">✦</span><span class="body-md">Users stored in <code style="font-size:11px;color:var(--teal);">users.json</code> (simulates IAM)</span></div>
+            <div style="display:flex;gap:10px;align-items:flex-start;"><span style="color:var(--teal);font-size:14px;margin-top:1px;">✦</span><span class="body-md">Models real AWS IAM policies</span></div>
+          </div>
+        </div>
+        <div style="height:100%;">
+          <div class="label" style="margin-bottom:8px;">Role Permissions</div>
+          <table class="ptable">
+            <thead><tr><th>Feature</th><th style="text-align:center;">Admin</th><th style="text-align:center;">Viewer</th></tr></thead>
+            <tbody>
+              <tr><td class="body-sm" style="color:var(--white);">View live dashboard</td><td style="text-align:center;" class="check-y">✓</td><td style="text-align:center;" class="check-y">✓</td></tr>
+              <tr><td class="body-sm" style="color:var(--white);">View alerts log</td><td style="text-align:center;" class="check-y">✓</td><td style="text-align:center;" class="check-y">✓</td></tr>
+              <tr><td class="body-sm" style="color:var(--white);">Export CSV data</td><td style="text-align:center;" class="check-y">✓</td><td style="text-align:center;" class="check-y">✓</td></tr>
+              <tr><td class="body-sm" style="color:var(--white);">Run benchmark</td><td style="text-align:center;" class="check-y">✓</td><td style="text-align:center;" class="check-n">✗</td></tr>
+              <tr><td class="body-sm" style="color:var(--white);">Admin user panel</td><td style="text-align:center;" class="check-y">✓</td><td style="text-align:center;" class="check-n">✗</td></tr>
+              <tr><td class="body-sm" style="color:var(--white);">Add / delete users</td><td style="text-align:center;" class="check-y">✓</td><td style="text-align:center;" class="check-n">✗</td></tr>
+              <tr><td class="body-sm" style="color:var(--white);">Change user roles</td><td style="text-align:center;" class="check-y">✓</td><td style="text-align:center;" class="check-n">✗</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 7 — ADMIN + EXPORT ══ -->
+  <div class="slide" id="s7">
+    <div class="orb" style="width:280px;height:280px;background:var(--teal);opacity:.07;bottom:-60px;left:-40px;"></div>
+    <div class="slide-header"><h2>Admin Panel &amp; Data Export</h2><span class="slide-num">07 / 11</span></div>
+    <div class="slide-body">
+      <div class="grid-2">
+        <div class="card card-accent acc-teal">
+          <div class="label">Admin Panel — /admin</div>
+          <div style="display:flex;flex-direction:column;gap:9px;margin-top:10px;">
+            <div style="display:flex;gap:10px;align-items:flex-start;"><span style="font-size:14px;">➕</span><span class="body-md">Add new users with a role</span></div>
+            <div style="display:flex;gap:10px;align-items:flex-start;"><span style="font-size:14px;">🗑️</span><span class="body-md">Delete existing users instantly</span></div>
+            <div style="display:flex;gap:10px;align-items:flex-start;"><span style="font-size:14px;">🔄</span><span class="body-md">Switch roles live — no server restart needed</span></div>
+            <div style="display:flex;gap:10px;align-items:flex-start;"><span style="font-size:14px;">💾</span><span class="body-md">Changes saved to <code style="color:var(--teal);font-size:11px;">users.json</code> instantly</span></div>
+          </div>
+        </div>
+        <div class="card card-accent acc-yellow">
+          <div class="label">CSV Data Export</div>
+          <div style="display:flex;flex-direction:column;gap:9px;margin-top:10px;">
+            <div style="display:flex;gap:10px;align-items:flex-start;"><span style="font-size:14px;">📊</span><span class="body-md"><code style="color:var(--yellow);font-size:11px;">/export/csv</code> — all sensor readings</span></div>
+            <div style="display:flex;gap:10px;align-items:flex-start;"><span style="font-size:14px;">🚨</span><span class="body-md"><code style="color:var(--yellow);font-size:11px;">/export/alerts/csv</code> — alerts log</span></div>
+            <div style="display:flex;gap:10px;align-items:flex-start;"><span style="font-size:14px;">📋</span><span class="body-md">Fields: ID, Timestamp, Temp, AQI, Risk Score</span></div>
+            <div style="display:flex;gap:10px;align-items:flex-start;"><span style="font-size:14px;">✅</span><span class="body-md">Available to both Admin and Viewer roles</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="background:rgba(0,188,212,0.06);border-color:var(--teal);">
+        <div style="font-size:11px;font-weight:700;color:var(--teal);margin-bottom:8px;">Why This Solves Gap 2 — Security as Afterthought</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div class="body-sm"><span style="color:var(--white);font-weight:500;">Before:</span> Any user could see or modify all data — no access control whatsoever</div>
+          <div class="body-sm"><span style="color:var(--white);font-weight:500;">After:</span> Admin routes protected by decorators, viewer gets read-only access across all APIs</div>
+          <div class="body-sm"><span style="color:var(--white);font-weight:500;">Real World:</span> This is exactly how AWS IAM works — roles, policies, and dynamic provisioning</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 8 — ML FORECAST ══ -->
+  <div class="slide" id="s8">
+    <div class="orb" style="width:320px;height:320px;background:var(--green);opacity:.07;top:-80px;right:-60px;"></div>
+    <div class="slide-header"><h2>ML Forecasting Layer — Predicting Future Risk</h2><span class="slide-num">08 / 11</span></div>
+    <div class="slide-body">
+      <div style="background:rgba(46,204,113,0.07);border:1px solid rgba(46,204,113,0.3);border-radius:10px;padding:12px 18px;font-size:12px;font-style:italic;color:var(--green);">
+        💡 Big Idea: Instead of only reacting to current danger — predict the NEXT reading and warn EARLY
+      </div>
+
+      <!-- Flow -->
+      <div class="flow">
+        <div class="flow-step" style="border-color:var(--teal);"><div style="font-size:10px;font-weight:700;color:var(--teal);">LAST 20</div><div style="font-size:9px;color:var(--muted);margin-top:2px;">Readings</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step" style="border-color:var(--purple);"><div style="font-size:10px;font-weight:700;color:var(--purple);">LINEAR REG.</div><div style="font-size:9px;color:var(--muted);margin-top:2px;">Train model</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step" style="border-color:var(--yellow);"><div style="font-size:10px;font-weight:700;color:var(--yellow);">PREDICTED</div><div style="font-size:9px;color:var(--muted);margin-top:2px;">Next values</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step" style="border-color:var(--purple);"><div style="font-size:10px;font-weight:700;color:var(--purple);">FUZZY ENGINE</div><div style="font-size:9px;color:var(--muted);margin-top:2px;">Score future</div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step" style="border-color:var(--green);"><div style="font-size:10px;font-weight:700;color:var(--green);">FUTURE RISK</div><div style="font-size:9px;color:var(--muted);margin-top:2px;">Pre-emptive alert</div></div>
+      </div>
+
+      <div style="background:rgba(230,126,34,0.08);border:1px solid rgba(230,126,34,0.3);border-radius:10px;padding:10px 18px;font-size:12px;color:var(--orange);">
+        ⚠️ Pre-emptive alert fires when Future Risk Score &gt; 60 — BEFORE actual danger reaches sensors
+      </div>
+
+      <div class="grid-2">
+        <div class="card card-accent acc-purple">
+          <div class="label">How It Trains</div>
+          <div style="display:flex;flex-direction:column;gap:7px;margin-top:8px;">
+            <div class="body-sm">• Separate model for Temp, Humidity &amp; AQI</div>
+            <div class="body-sm">• Trains automatically after 10 readings</div>
+            <div class="body-sm">• Re-trains every 10 new readings</div>
+            <div class="body-sm">• MinMaxScaler normalization applied</div>
+          </div>
+        </div>
+        <div class="card card-accent acc-green">
+          <div class="label">Confidence Levels</div>
+          <div style="display:flex;flex-direction:column;gap:7px;margin-top:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;"><span class="body-sm">Low</span><span style="font-size:11px;color:var(--red);">&#60; 20 readings</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;"><span class="body-sm">Medium</span><span style="font-size:11px;color:var(--yellow);">20 – 40 readings</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;"><span class="body-sm">High</span><span style="font-size:11px;color:var(--green);">&gt; 40 readings</span></div>
+            <div class="body-sm" style="margin-top:2px;">Shown live on the dashboard</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 9 — RESULTS ══ -->
+  <div class="slide" id="s9">
+    <div class="orb" style="width:280px;height:280px;background:var(--green);opacity:.07;bottom:-60px;right:-40px;"></div>
+    <div class="slide-header"><h2>Results — What Our System Achieved</h2><span class="slide-num">09 / 11</span></div>
+    <div class="slide-body">
+      <!-- Stats row -->
+      <div class="grid-2" style="grid-template-columns:1fr 1fr 1fr 1fr;">
+        <div class="card" style="text-align:center;padding:14px 10px;border-top:2px solid var(--teal);">
+          <div class="stat-num" style="color:var(--teal);">200</div>
+          <div class="body-sm" style="margin-top:4px;">Readings Collected</div>
+        </div>
+        <div class="card" style="text-align:center;padding:14px 10px;border-top:2px solid var(--red);">
+          <div class="stat-num" style="color:var(--red);">47</div>
+          <div class="body-sm" style="margin-top:4px;">Alerts Triggered</div>
+        </div>
+        <div class="card" style="text-align:center;padding:14px 10px;border-top:2px solid var(--green);">
+          <div class="stat-num" style="color:var(--green);">100%</div>
+          <div class="body-sm" style="margin-top:4px;">Alert Success Rate</div>
+        </div>
+        <div class="card" style="text-align:center;padding:14px 10px;border-top:2px solid var(--purple);">
+          <div class="stat-num" style="color:var(--purple);">35ms</div>
+          <div class="body-sm" style="margin-top:4px;">Serverless Latency</div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="grid-2" style="flex:1;">
+        <div class="card">
+          <div class="label" style="margin-bottom:12px;">Risk Classification — 200 Readings</div>
+          <div class="chart-bar-wrap" id="barChart">
+            <div class="chart-bar-col">
+              <div class="chart-bar-val" style="color:var(--green);">31</div>
+              <div class="chart-bar" style="height:26%;background:var(--green);"></div>
+              <div class="chart-bar-label">Safe</div>
+            </div>
+            <div class="chart-bar-col">
+              <div class="chart-bar-val" style="color:var(--yellow);">122</div>
+              <div class="chart-bar" style="height:100%;background:var(--yellow);"></div>
+              <div class="chart-bar-label">Advisory</div>
+            </div>
+            <div class="chart-bar-col">
+              <div class="chart-bar-val" style="color:var(--orange);">40</div>
+              <div class="chart-bar" style="height:33%;background:var(--orange);"></div>
+              <div class="chart-bar-label">Warning</div>
+            </div>
+            <div class="chart-bar-col">
+              <div class="chart-bar-val" style="color:var(--red);">7</div>
+              <div class="chart-bar" style="height:6%;background:var(--red);"></div>
+              <div class="chart-bar-label">Emergency</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="label" style="margin-bottom:8px;">Serverless vs VM Response Time (ms)</div>
+          <svg viewBox="0 0 300 110" style="width:100%;height:110px;">
+            <!-- grid lines -->
+            <line x1="30" y1="10" x2="290" y2="10" stroke="#252548" stroke-width="0.5"/>
+            <line x1="30" y1="37" x2="290" y2="37" stroke="#252548" stroke-width="0.5"/>
+            <line x1="30" y1="64" x2="290" y2="64" stroke="#252548" stroke-width="0.5"/>
+            <line x1="30" y1="91" x2="290" y2="91" stroke="#252548" stroke-width="0.5"/>
+            <!-- y labels -->
+            <text x="26" y="14" fill="#555580" font-size="7" text-anchor="end">300</text>
+            <text x="26" y="41" fill="#555580" font-size="7" text-anchor="end">200</text>
+            <text x="26" y="68" fill="#555580" font-size="7" text-anchor="end">100</text>
+            <text x="26" y="95" fill="#555580" font-size="7" text-anchor="end">0</text>
+            <!-- x labels -->
+            <text x="50"  y="105" fill="#555580" font-size="7" text-anchor="middle">10</text>
+            <text x="110" y="105" fill="#555580" font-size="7" text-anchor="middle">50</text>
+            <text x="170" y="105" fill="#555580" font-size="7" text-anchor="middle">100</text>
+            <text x="230" y="105" fill="#555580" font-size="7" text-anchor="middle">200</text>
+            <text x="290" y="105" fill="#555580" font-size="7" text-anchor="middle">500</text>
+            <!-- VM line: 28,62,107,182,278 → mapped to y = 91 - (v/300)*81 -->
+            <polyline points="50,83 110,74 170,62 230,42 290,16" fill="none" stroke="#e74c3c" stroke-width="2"/>
+            <circle cx="50"  cy="83" r="3" fill="#e74c3c"/>
+            <circle cx="110" cy="74" r="3" fill="#e74c3c"/>
+            <circle cx="170" cy="62" r="3" fill="#e74c3c"/>
+            <circle cx="230" cy="42" r="3" fill="#e74c3c"/>
+            <circle cx="290" cy="16" r="3" fill="#e74c3c"/>
+            <!-- Serverless line: 44,40,41,39,35 -->
+            <polyline points="50,79 110,80 170,80 230,81 290,82" fill="none" stroke="#7c4dff" stroke-width="2"/>
+            <circle cx="50"  cy="79" r="3" fill="#7c4dff"/>
+            <circle cx="110" cy="80" r="3" fill="#7c4dff"/>
+            <circle cx="170" cy="80" r="3" fill="#7c4dff"/>
+            <circle cx="230" cy="81" r="3" fill="#7c4dff"/>
+            <circle cx="290" cy="82" r="3" fill="#7c4dff"/>
+            <!-- Legend -->
+            <rect x="32" y="14" width="8" height="3" fill="#7c4dff" rx="1"/>
+            <text x="44" y="18" fill="#b0b0c8" font-size="7">Serverless</text>
+            <rect x="90" y="14" width="8" height="3" fill="#e74c3c" rx="1"/>
+            <text x="102" y="18" fill="#b0b0c8" font-size="7">VM-Based</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 10 — DEMO ══ -->
+  <div class="slide" id="s10">
+    <div class="orb" style="width:300px;height:300px;background:var(--purple);opacity:.08;top:-60px;right:-40px;"></div>
+    <div class="slide-header"><h2>Live Demo — What You Will See</h2><span class="slide-num">10 / 11</span></div>
+    <div class="slide-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;flex:1;">
+        <div class="card" style="border-top:2px solid var(--teal);">
+          <div style="font-size:22px;margin-bottom:8px;">🔐</div>
+          <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--teal);margin-bottom:6px;">1 — Login Page</div>
+          <div class="body-sm">Login as <code style="color:var(--teal);font-size:10px;">admin / admin123</code> — Flask session-based authentication in action</div>
+        </div>
+        <div class="card" style="border-top:2px solid var(--purple);">
+          <div style="font-size:22px;margin-bottom:8px;">📊</div>
+          <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--purple);margin-bottom:6px;">2 — Live Dashboard</div>
+          <div class="body-sm">Watch Temperature, Humidity, AQI charts update in real-time every 5 seconds</div>
+        </div>
+        <div class="card" style="border-top:2px solid var(--red);">
+          <div style="font-size:22px;margin-bottom:8px;">🚨</div>
+          <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--red);margin-bottom:6px;">3 — Risk Alerts</div>
+          <div class="body-sm">See fuzzy risk score change and Emergency alerts fire automatically when AQI spikes above threshold</div>
+        </div>
+        <div class="card" style="border-top:2px solid var(--green);">
+          <div style="font-size:22px;margin-bottom:8px;">🤖</div>
+          <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--green);margin-bottom:6px;">4 — ML Forecast</div>
+          <div class="body-sm">Check predicted next reading with ↑↓ trend arrows and the future risk score confidence level</div>
+        </div>
+        <div class="card" style="border-top:2px solid var(--teal);">
+          <div style="font-size:22px;margin-bottom:8px;">👤</div>
+          <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--teal);margin-bottom:6px;">5 — Admin Panel</div>
+          <div class="body-sm">Add a new user, switch their role live at <code style="color:var(--teal);font-size:10px;">/admin</code> — no server restart</div>
+        </div>
+        <div class="card" style="border-top:2px solid var(--yellow);">
+          <div style="font-size:22px;margin-bottom:8px;">📥</div>
+          <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--yellow);margin-bottom:6px;">6 — CSV Export</div>
+          <div class="body-sm">Download all sensor data and alerts as spreadsheet files from the dashboard toolbar</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 11 — CONCLUSION ══ -->
+  <div class="slide" id="s11">
+    <div class="orb" style="width:420px;height:420px;background:var(--purple);opacity:.1;bottom:-120px;left:-100px;"></div>
+    <div class="orb" style="width:280px;height:280px;background:var(--teal);opacity:.08;top:-60px;right:-40px;"></div>
+    <div class="slide-header"><h2>Conclusion &amp; Future Work</h2><span class="slide-num">11 / 11</span></div>
+    <div class="slide-body">
+      <div class="grid-2" style="flex:1;">
+        <div class="card card-accent acc-green">
+          <div class="label">✅ What We Achieved</div>
+          <div style="display:flex;flex-direction:column;gap:9px;margin-top:10px;">
+            <div style="display:flex;gap:10px;"><span style="color:var(--green);">✓</span><span class="body-md">Real-time IoT monitoring with Fuzzy Mamdani FIS</span></div>
+            <div style="display:flex;gap:10px;"><span style="color:var(--green);">✓</span><span class="body-md">Dual-layer AI — Fuzzy classification + ML forecasting</span></div>
+            <div style="display:flex;gap:10px;"><span style="color:var(--green);">✓</span><span class="body-md">IAM-style RBAC login and live admin panel</span></div>
+            <div style="display:flex;gap:10px;"><span style="color:var(--green);">✓</span><span class="body-md">Serverless architecture with 99%+ cost savings</span></div>
+            <div style="display:flex;gap:10px;"><span style="color:var(--green);">✓</span><span class="body-md">Automated closed-loop alert system</span></div>
+            <div style="display:flex;gap:10px;"><span style="color:var(--green);">✓</span><span class="body-md">All 3 research gaps addressed and solved</span></div>
+          </div>
+        </div>
+        <div class="card card-accent acc-teal">
+          <div class="label">🚀 Future Work</div>
+          <div style="display:flex;flex-direction:column;gap:9px;margin-top:10px;">
+            <div style="display:flex;gap:10px;"><span style="color:var(--teal);">→</span><span class="body-md">LSTM model for longer prediction horizon</span></div>
+            <div style="display:flex;gap:10px;"><span style="color:var(--teal);">→</span><span class="body-md">Real hardware sensors (DHT22, MQ135)</span></div>
+            <div style="display:flex;gap:10px;"><span style="color:var(--teal);">→</span><span class="body-md">Docker containerization for easy deployment</span></div>
+            <div style="display:flex;gap:10px;"><span style="color:var(--teal);">→</span><span class="body-md">AWS Lambda + DynamoDB production deploy</span></div>
+            <div style="display:flex;gap:10px;"><span style="color:var(--teal);">→</span><span class="body-md">Multi-location distributed monitoring nodes</span></div>
+            <div style="display:flex;gap:10px;"><span style="color:var(--teal);">→</span><span class="body-md">Mobile push notifications</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 28px;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--white);">Thank You!</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px;">Kundan &nbsp;·&nbsp; Riddhi &nbsp;·&nbsp; Priyant</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;color:var(--muted);font-style:italic;">FuzzyEnvCloud — Cloud Computing Semester Project</div>
+          <div style="font-size:13px;color:var(--purple);font-weight:600;margin-top:6px;">Questions Welcome 🎤</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /deck -->
+
+<!-- ── NAV ── -->
+<div id="nav">
+  <button onclick="go(-1)" title="Previous">&#8592;</button>
+  <div class="dot-row" id="dots"></div>
+  <span id="slide-counter">1 / 11</span>
+  <button onclick="go(1)" title="Next">&#8594;</button>
+</div>
+<div id="kb-hint">← → SPACE to navigate · F for fullscreen</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total  = slides.length;
+  let cur = 0;
+
+  // Build dots
+  const dotRow = document.getElementById('dots');
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' on' : '');
+    d.onclick = () => goTo(i);
+    dotRow.appendChild(d);
+  });
+
+  function goTo(n) {
+    slides[cur].classList.remove('active');
+    dotRow.children[cur].classList.remove('on');
+    cur = Math.max(0, Math.min(total - 1, n));
+    slides[cur].classList.add('active');
+    dotRow.children[cur].classList.add('on');
+    document.getElementById('slide-counter').textContent = (cur + 1) + ' / ' + total;
+    document.getElementById('progress').style.width = ((cur + 1) / total * 100) + '%';
+  }
+
+  function go(dir) { goTo(cur + dir); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(1); }
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); go(-1); }
+    if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+  });
+
+  // Init progress
+  document.getElementById('progress').style.width = (1/total*100) + '%';
+</script>
+</body>
+</html>
